@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../context/DataContext';
+import { Washing } from '../types';
 
 interface AppointmentModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (data: any) => void;
+    initialStatus?: Washing['status'];
 }
 
-const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, onSubmit }) => {
+const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, onSubmit, initialStatus }) => {
     const { clients } = useData();
     const [selectedClientId, setSelectedClientId] = useState('');
     const [formData, setFormData] = useState({
@@ -39,7 +41,10 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, on
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(formData);
+        onSubmit({
+            ...formData,
+            status: initialStatus // Pass the status if provided
+        });
         onClose();
         setSelectedClientId('');
         setFormData({
@@ -62,7 +67,9 @@ const AppointmentModal: React.FC<AppointmentModalProps> = ({ isOpen, onClose, on
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-surface-light dark:bg-surface-dark w-full max-w-md rounded-2xl shadow-2xl border border-border-light dark:border-border-dark overflow-hidden animate-in fade-in zoom-in duration-200">
                 <div className="flex items-center justify-between p-6 border-b border-border-light dark:border-border-dark">
-                    <h2 className="text-xl font-bold text-[#111418] dark:text-white">Novo Agendamento</h2>
+                    <h2 className="text-xl font-bold text-[#111418] dark:text-white">
+                        {initialStatus ? 'Nova Lavagem' : 'Novo Agendamento'}
+                    </h2>
                     <button
                         onClick={onClose}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-gray-500"

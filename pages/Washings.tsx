@@ -1,7 +1,37 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Navigation from '../components/Navigation';
+import { useData } from '../context/DataContext';
+import AppointmentModal from '../components/AppointmentModal';
+import { Washing } from '../types';
 
 const Washings: React.FC = () => {
+    const { washings, addWashing } = useData();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterDate, setFilterDate] = useState('');
+    const [filterStatus, setFilterStatus] = useState<'Todos' | 'Em Andamento' | 'Aguardando'>('Todos');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Filter Logic
+    const filteredWashings = washings.filter(washing => {
+        const matchesSearch =
+            washing.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            washing.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesDate = filterDate ? washing.date === filterDate : true;
+
+        const matchesStatus = filterStatus === 'Todos'
+            ? true
+            : filterStatus === 'Aguardando'
+                ? washing.status === 'Agendado'
+                : washing.status === filterStatus;
+
+        return matchesSearch && matchesDate && matchesStatus;
+    });
+
+    const handleNewWashing = (data: any) => {
+        addWashing(data);
+    };
+
     return (
         <div className="flex flex-col h-screen w-full bg-background-light dark:bg-background-dark overflow-hidden">
             <Navigation />
@@ -13,28 +43,50 @@ const Washings: React.FC = () => {
                                 <h2 className="text-[#111418] dark:text-white text-3xl font-black leading-tight tracking-[-0.033em]">Lavagens</h2>
                                 <p className="text-[#617589] dark:text-[#94a3b8] text-base font-normal leading-normal">Gerencie todas as lavagens agendadas, em andamento e realizadas.</p>
                             </div>
-                            <button className="flex items-center justify-center gap-2 rounded-lg h-10 px-5 bg-primary hover:bg-blue-600 text-white text-sm font-bold leading-normal transition-all shadow-sm">
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="flex items-center justify-center gap-2 rounded-lg h-10 px-5 bg-primary hover:bg-blue-600 text-white text-sm font-bold leading-normal transition-all shadow-sm"
+                            >
                                 <span className="material-symbols-outlined text-[20px]">add</span>
                                 <span>Nova Lavagem</span>
                             </button>
                         </div>
-                        
+
                         <div className="bg-white dark:bg-[#1a2634] rounded-xl border border-[#dbe0e6] dark:border-[#2a3b4d] p-4 shadow-sm flex flex-col gap-4">
                             <div className="flex flex-col md:flex-row gap-4">
                                 <label className="flex flex-col flex-1 min-w-[200px] relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#617589]">search</span>
-                                    <input className="flex w-full rounded-lg border border-[#dbe0e6] dark:border-[#2a3b4d] bg-white dark:bg-[#24303f] dark:text-white h-12 pl-12 pr-4 text-base placeholder:text-[#617589] focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all" placeholder="Buscar por cliente ou placa" />
+                                    <input
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="flex w-full rounded-lg border border-[#dbe0e6] dark:border-[#2a3b4d] bg-white dark:bg-[#24303f] dark:text-white h-12 pl-12 pr-4 text-base placeholder:text-[#617589] focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                                        placeholder="Buscar por cliente ou placa"
+                                    />
                                 </label>
                                 <label className="flex flex-col w-full md:w-64 relative">
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#617589]">calendar_today</span>
-                                    <input className="flex w-full rounded-lg border border-[#dbe0e6] dark:border-[#2a3b4d] bg-white dark:bg-[#24303f] dark:text-white h-12 pl-12 pr-4 text-base placeholder:text-[#617589] focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-[#617589]" type="date"/>
+                                    <input
+                                        type="date"
+                                        value={filterDate}
+                                        onChange={(e) => setFilterDate(e.target.value)}
+                                        className="flex w-full rounded-lg border border-[#dbe0e6] dark:border-[#2a3b4d] bg-white dark:bg-[#24303f] dark:text-white h-12 pl-12 pr-4 text-base placeholder:text-[#617589] focus:outline-0 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all text-[#617589]"
+                                    />
                                 </label>
                             </div>
                             <div className="flex gap-2 flex-wrap items-center">
                                 <span className="text-xs font-semibold uppercase text-[#617589] mr-2">Status:</span>
-                                <button className="flex h-8 items-center justify-center px-4 rounded-full bg-[#111418] text-white text-sm font-medium transition-colors">Todos</button>
-                                <button className="flex h-8 items-center justify-center px-4 rounded-full bg-[#f0f2f4] dark:bg-[#24303f] text-[#111418] dark:text-white hover:bg-[#dbe0e6] dark:hover:bg-[#334155] text-sm font-medium transition-colors">Em Andamento</button>
-                                <button className="flex h-8 items-center justify-center px-4 rounded-full bg-[#f0f2f4] dark:bg-[#24303f] text-[#111418] dark:text-white hover:bg-[#dbe0e6] dark:hover:bg-[#334155] text-sm font-medium transition-colors">Aguardando</button>
+                                {['Todos', 'Em Andamento', 'Aguardando'].map((status) => (
+                                    <button
+                                        key={status}
+                                        onClick={() => setFilterStatus(status as any)}
+                                        className={`flex h-8 items-center justify-center px-4 rounded-full text-sm font-medium transition-colors ${filterStatus === status
+                                                ? 'bg-[#111418] text-white'
+                                                : 'bg-[#f0f2f4] dark:bg-[#24303f] text-[#111418] dark:text-white hover:bg-[#dbe0e6] dark:hover:bg-[#334155]'
+                                            }`}
+                                    >
+                                        {status}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -53,60 +105,47 @@ const Washings: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#dbe0e6] dark:divide-[#2a3b4d]">
-                                        <tr className="group hover:bg-gray-50 dark:hover:bg-[#24303f]/50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#617589] dark:text-[#94a3b8] text-sm">#1024</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium">24 Out</span>
-                                                    <span className="text-xs text-[#617589]">14:30</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm font-medium">Carlos Silva</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[#111418] dark:text-white text-sm font-medium">Honda Civic</span>
-                                                    <span className="text-xs text-[#617589] uppercase">ABC-1234</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">Completa + Cera</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>Em Andamento
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <button className="text-[#617589] hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3b4d]">
-                                                    <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                            <tr className="group hover:bg-gray-50 dark:hover:bg-[#24303f]/50 transition-colors">
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#617589] dark:text-[#94a3b8] text-sm">#1023</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium">24 Out</span>
-                                                    <span className="text-xs text-[#617589]">13:15</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm font-medium">Ana Souza</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <span className="text-[#111418] dark:text-white text-sm font-medium">Fiat Argo</span>
-                                                    <span className="text-xs text-[#617589] uppercase">XYZ-9876</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">Simples</td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-bold">
-                                                    Concluído
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                <button className="text-[#617589] hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3b4d]">
-                                                    <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                                                </button>
-                                            </td>
-                                        </tr>
+                                        {filteredWashings.length === 0 ? (
+                                            <tr>
+                                                <td colSpan={7} className="px-6 py-10 text-center text-[#617589] dark:text-[#94a3b8] italic">
+                                                    Nenhuma lavagem encontrada.
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredWashings.map((washing) => (
+                                                <tr key={washing.id} className="group hover:bg-gray-50 dark:hover:bg-[#24303f]/50 transition-colors">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-[#617589] dark:text-[#94a3b8] text-sm">#{washing.id}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-medium">{new Date(washing.date).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })}</span>
+                                                            <span className="text-xs text-[#617589]">{washing.time}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm font-medium">{washing.clientName}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[#111418] dark:text-white text-sm font-medium">{washing.vehicleModel}</span>
+                                                            <span className="text-xs text-[#617589] uppercase">{washing.vehiclePlate}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">{washing.serviceType}</td>
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${washing.status === 'Agendado' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                                washing.status === 'Em Andamento' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                            }`}>
+                                                            {washing.status === 'Em Andamento' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>}
+                                                            {washing.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                                                        <button className="text-[#617589] hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3b4d]">
+                                                            <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
@@ -114,6 +153,13 @@ const Washings: React.FC = () => {
                     </div>
                 </div>
             </main>
+
+            <AppointmentModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSubmit={handleNewWashing}
+                initialStatus="Em Andamento"
+            />
         </div>
     );
 };

@@ -5,7 +5,7 @@ interface DataContextType {
     clients: Client[];
     washings: Washing[];
     addClient: (client: Omit<Client, 'id' | 'initials' | 'totalSpent' | 'lastVisit'>) => void;
-    addWashing: (washing: Omit<Washing, 'id' | 'status'>) => void;
+    addWashing: (washing: Omit<Washing, 'id' | 'status'> & { status?: Washing['status'] }) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -41,11 +41,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setClients(prev => [newClient, ...prev]);
     };
 
-    const addWashing = (washingData: Omit<Washing, 'id' | 'status'>) => {
+    const addWashing = (washingData: Omit<Washing, 'id' | 'status'> & { status?: Washing['status'] }) => {
         const newWashing: Washing = {
             ...washingData,
             id: Math.random().toString(36).substr(2, 9),
-            status: 'Agendado'
+            status: washingData.status || 'Agendado'
         };
         setWashings(prev => [newWashing, ...prev]);
     };
