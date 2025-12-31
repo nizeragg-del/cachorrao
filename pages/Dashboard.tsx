@@ -4,12 +4,32 @@ import AppointmentModal from '../components/AppointmentModal';
 import { useData } from '../context/DataContext';
 
 const Dashboard: React.FC = () => {
-    const { washings, addWashing } = useData();
+    const { washings, addWashing, updateWashingStatus, deleteWashing } = useData();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+    const menuRef = React.useRef<HTMLDivElement>(null);
 
     const handleNewAppointment = (data: any) => {
         addWashing(data);
     };
+
+    // Close menu when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setActiveMenuId(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
+    // Filter for today's washings
+    const today = new Date().toISOString().split('T')[0];
+    const todaysWashings = washings.filter(w => w.date === today);
 
     return (
         <div className="flex min-h-screen flex-col bg-background-light dark:bg-background-dark">
@@ -24,7 +44,7 @@ const Dashboard: React.FC = () => {
                             <span className="material-symbols-outlined text-primary">local_car_wash</span>
                         </div>
                         <div className="flex items-end gap-3">
-                            <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight">{washings.length}</p>
+                            <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight">{todaysWashings.length}</p>
                             <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
                                 <span className="material-symbols-outlined text-[#078838] dark:text-green-400 text-xs">trending_up</span>
                                 <p className="text-[#078838] dark:text-green-400 text-xs font-bold">+20%</p>
@@ -38,7 +58,7 @@ const Dashboard: React.FC = () => {
                             <span className="material-symbols-outlined text-primary">payments</span>
                         </div>
                         <div className="flex items-end gap-3">
-                            <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight">R$ {(washings.length * 50).toFixed(2)}</p>
+                            <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight">R$ {(todaysWashings.length * 50).toFixed(2)}</p>
                             <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
                                 <span className="material-symbols-outlined text-[#078838] dark:text-green-400 text-xs">trending_up</span>
                                 <p className="text-[#078838] dark:text-green-400 text-xs font-bold">+5%</p>
@@ -52,7 +72,7 @@ const Dashboard: React.FC = () => {
                             <span className="material-symbols-outlined text-orange-500">timer</span>
                         </div>
                         <div className="flex items-end gap-3">
-                            <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight">{washings.filter(w => w.status === 'Aguardando').length}</p>
+                            <p className="text-[#111418] dark:text-white text-3xl font-bold leading-tight">{todaysWashings.filter(w => w.status === 'Agendado').length}</p>
                             <div className="flex items-center gap-1 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">
                                 <span className="material-symbols-outlined text-[#e73908] dark:text-red-400 text-xs">trending_down</span>
                                 <p className="text-[#e73908] dark:text-red-400 text-xs font-bold">-10%</p>
@@ -70,27 +90,14 @@ const Dashboard: React.FC = () => {
                                 <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-[#111418] dark:text-white">
                                     <span className="material-symbols-outlined text-lg">chevron_left</span>
                                 </button>
-                                <p className="text-[#111418] dark:text-white text-base font-bold">Outubro 2023</p>
+                                <p className="text-[#111418] dark:text-white text-base font-bold">Hoje</p>
                                 <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors text-[#111418] dark:text-white">
                                     <span className="material-symbols-outlined text-lg">chevron_right</span>
                                 </button>
                             </div>
-                            <div className="grid grid-cols-7 mb-2">
-                                {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, i) => (
-                                    <p key={i} className="text-[#617589] dark:text-gray-400 text-xs font-bold text-center">{day}</p>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-7 gap-y-2 gap-x-1">
-                                <div className="col-start-4">
-                                    <button className="h-9 w-9 flex items-center justify-center rounded-full text-sm text-[#111418] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">1</button>
-                                </div>
-                                {[2, 3, 4].map(d => (
-                                    <button key={d} className="h-9 w-9 flex items-center justify-center rounded-full text-sm text-[#111418] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{d}</button>
-                                ))}
-                                <button className="h-9 w-9 flex items-center justify-center rounded-full text-sm text-white bg-primary font-bold shadow-md shadow-primary/30">5</button>
-                                {[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21].map(d => (
-                                    <button key={d} className="h-9 w-9 flex items-center justify-center rounded-full text-sm text-[#111418] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">{d}</button>
-                                ))}
+                            {/* Calendar content placeholder - can remain static for now */}
+                            <div className="flex items-center justify-center h-40 bg-gray-50 dark:bg-gray-800 rounded-lg text-gray-400 text-sm">
+                                Calendário Simplificado
                             </div>
                         </div>
                         <div className="rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark p-4 shadow-sm">
@@ -138,8 +145,8 @@ const Dashboard: React.FC = () => {
                             </button>
                         </div>
                         {/* Appointments Table */}
-                        <div className="overflow-hidden rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark shadow-sm">
-                            <div className="overflow-x-auto">
+                        <div className="overflow-hidden rounded-xl border border-border-light dark:border-border-dark bg-surface-light dark:bg-surface-dark shadow-sm min-h-[400px]">
+                            <div className="overflow-visible">
                                 <table className="w-full min-w-[800px]">
                                     <thead className="bg-gray-50 dark:bg-[#23303E] border-b border-border-light dark:border-border-dark">
                                         <tr>
@@ -151,16 +158,16 @@ const Dashboard: React.FC = () => {
                                             <th className="px-6 py-4 text-right text-[#617589] dark:text-gray-400 text-xs font-bold uppercase tracking-wider">Ações</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-border-light dark:divide-border-dark">
-                                        {washings.length === 0 ? (
+                                    <tbody className="divide-y divide-border-light dark:divide-border-dark pb-20">
+                                        {todaysWashings.length === 0 ? (
                                             <tr>
                                                 <td colSpan={6} className="px-6 py-10 text-center text-[#617589] dark:text-gray-400 italic">
                                                     Nenhum agendamento para hoje. Clique em "Novo Agendamento" para começar.
                                                 </td>
                                             </tr>
                                         ) : (
-                                            washings.map(washing => (
-                                                <tr key={washing.id} className="hover:bg-gray-50 dark:hover:bg-[#23303E] transition-colors group">
+                                            todaysWashings.map(washing => (
+                                                <tr key={washing.id} className="hover:bg-gray-50 dark:hover:bg-[#23303E] transition-colors group relative">
                                                     <td className="px-6 py-4 text-[#111418] dark:text-white text-sm font-bold">
                                                         <div className="flex flex-col">
                                                             <span>{washing.time}</span>
@@ -179,19 +186,74 @@ const Dashboard: React.FC = () => {
                                                     </td>
                                                     <td className="px-6 py-4">
                                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${washing.status === 'Agendado' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400' :
-                                                                washing.status === 'Em Andamento' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
-                                                                    'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
+                                                            washing.status === 'Em Andamento' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400' :
+                                                                'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400'
                                                             }`}>
                                                             <span className={`size-1.5 rounded-full ${washing.status === 'Agendado' ? 'bg-yellow-500' :
-                                                                    washing.status === 'Em Andamento' ? 'bg-blue-500 animate-pulse' :
-                                                                        'bg-green-500'
+                                                                washing.status === 'Em Andamento' ? 'bg-blue-500 animate-pulse' :
+                                                                    'bg-green-500'
                                                                 }`}></span>{washing.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <button className="text-[#617589] hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors">
+                                                    <td className="px-6 py-4 text-right relative">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveMenuId(activeMenuId === washing.id ? null : washing.id);
+                                                            }}
+                                                            className="text-[#617589] hover:text-primary dark:text-gray-400 dark:hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                        >
                                                             <span className="material-symbols-outlined">more_vert</span>
                                                         </button>
+
+                                                        {activeMenuId === washing.id && (
+                                                            <div
+                                                                ref={menuRef}
+                                                                className="absolute right-8 top-8 z-50 w-48 bg-white dark:bg-surface-dark rounded-lg shadow-xl border border-border-light dark:border-border-dark overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right text-left"
+                                                            >
+                                                                <div className="py-1">
+                                                                    {washing.status === 'Agendado' && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                updateWashingStatus(washing.id, 'Em Andamento');
+                                                                                setActiveMenuId(null);
+                                                                            }}
+                                                                            className="w-full text-left px-4 py-2.5 text-sm text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-blue-500 text-[18px]">play_arrow</span>
+                                                                            Iniciar Lavagem
+                                                                        </button>
+                                                                    )}
+                                                                    {washing.status === 'Em Andamento' && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                updateWashingStatus(washing.id, 'Concluído');
+                                                                                setActiveMenuId(null);
+                                                                            }}
+                                                                            className="w-full text-left px-4 py-2.5 text-sm text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                                                                            Concluir Lavagem
+                                                                        </button>
+                                                                    )}
+
+                                                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
+                                                                                deleteWashing(washing.id);
+                                                                                setActiveMenuId(null);
+                                                                            }
+                                                                        }}
+                                                                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                                        Cancelar
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))
@@ -200,7 +262,7 @@ const Dashboard: React.FC = () => {
                                 </table>
                             </div>
                             <div className="flex items-center justify-between p-4 border-t border-border-light dark:border-border-dark">
-                                <p className="text-xs text-[#617589] dark:text-gray-400">Mostrando {washings.length} agendamentos</p>
+                                <p className="text-xs text-[#617589] dark:text-gray-400">Mostrando {todaysWashings.length} agendamentos</p>
                             </div>
                         </div>
                     </div>

@@ -6,6 +6,8 @@ interface DataContextType {
     washings: Washing[];
     addClient: (client: Omit<Client, 'id' | 'initials' | 'totalSpent' | 'lastVisit'>) => void;
     addWashing: (washing: Omit<Washing, 'id' | 'status'> & { status?: Washing['status'] }) => void;
+    updateWashingStatus: (id: string, status: Washing['status']) => void;
+    deleteWashing: (id: string) => void;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -50,8 +52,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setWashings(prev => [newWashing, ...prev]);
     };
 
+    const updateWashingStatus = (id: string, status: Washing['status']) => {
+        setWashings(prev => prev.map(washing =>
+            washing.id === id ? { ...washing, status } : washing
+        ));
+    };
+
+    const deleteWashing = (id: string) => {
+        setWashings(prev => prev.filter(washing => washing.id !== id));
+    };
+
     return (
-        <DataContext.Provider value={{ clients, washings, addClient, addWashing }}>
+        <DataContext.Provider value={{ clients, washings, addClient, addWashing, updateWashingStatus, deleteWashing }}>
             {children}
         </DataContext.Provider>
     );

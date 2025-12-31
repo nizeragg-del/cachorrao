@@ -5,11 +5,27 @@ import AppointmentModal from '../components/AppointmentModal';
 import { Washing } from '../types';
 
 const Washings: React.FC = () => {
-    const { washings, addWashing } = useData();
+    const { washings, addWashing, updateWashingStatus, deleteWashing } = useData();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterDate, setFilterDate] = useState('');
     const [filterStatus, setFilterStatus] = useState<'Todos' | 'Em Andamento' | 'Aguardando'>('Todos');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+    const menuRef = React.useRef<HTMLDivElement>(null);
+
+    // Close menu when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setActiveMenuId(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     // Filter Logic
     const filteredWashings = washings.filter(washing => {
@@ -80,8 +96,8 @@ const Washings: React.FC = () => {
                                         key={status}
                                         onClick={() => setFilterStatus(status as any)}
                                         className={`flex h-8 items-center justify-center px-4 rounded-full text-sm font-medium transition-colors ${filterStatus === status
-                                                ? 'bg-[#111418] text-white'
-                                                : 'bg-[#f0f2f4] dark:bg-[#24303f] text-[#111418] dark:text-white hover:bg-[#dbe0e6] dark:hover:bg-[#334155]'
+                                            ? 'bg-[#111418] text-white'
+                                            : 'bg-[#f0f2f4] dark:bg-[#24303f] text-[#111418] dark:text-white hover:bg-[#dbe0e6] dark:hover:bg-[#334155]'
                                             }`}
                                     >
                                         {status}
@@ -90,8 +106,8 @@ const Washings: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col flex-1 overflow-hidden rounded-xl border border-[#dbe0e6] dark:border-[#2a3b4d] bg-white dark:bg-[#1a2634] shadow-sm">
-                            <div className="overflow-x-auto">
+                        <div className="flex flex-col flex-1 overflow-hidden rounded-xl border border-[#dbe0e6] dark:border-[#2a3b4d] bg-white dark:bg-[#1a2634] shadow-sm pb-32">
+                            <div className="overflow-visible">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-gray-50 dark:bg-[#24303f] border-b border-[#dbe0e6] dark:border-[#2a3b4d]">
@@ -113,7 +129,7 @@ const Washings: React.FC = () => {
                                             </tr>
                                         ) : (
                                             filteredWashings.map((washing) => (
-                                                <tr key={washing.id} className="group hover:bg-gray-50 dark:hover:bg-[#24303f]/50 transition-colors">
+                                                <tr key={washing.id} className="group hover:bg-gray-50 dark:hover:bg-[#24303f]/50 transition-colors relative">
                                                     <td className="px-6 py-4 whitespace-nowrap text-[#617589] dark:text-[#94a3b8] text-sm">#{washing.id}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">
                                                         <div className="flex flex-col">
@@ -131,17 +147,72 @@ const Washings: React.FC = () => {
                                                     <td className="px-6 py-4 whitespace-nowrap text-[#111418] dark:text-white text-sm">{washing.serviceType}</td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${washing.status === 'Agendado' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                                washing.status === 'Em Andamento' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                                    'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                                                            washing.status === 'Em Andamento' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
                                                             }`}>
                                                             {washing.status === 'Em Andamento' && <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse"></span>}
                                                             {washing.status}
                                                         </span>
                                                     </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                                                        <button className="text-[#617589] hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3b4d]">
+                                                    <td className="px-6 py-4 whitespace-nowrap text-right relative">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActiveMenuId(activeMenuId === washing.id ? null : washing.id);
+                                                            }}
+                                                            className="text-[#617589] hover:text-primary transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-[#2a3b4d]"
+                                                        >
                                                             <span className="material-symbols-outlined text-[20px]">more_vert</span>
                                                         </button>
+
+                                                        {activeMenuId === washing.id && (
+                                                            <div
+                                                                ref={menuRef}
+                                                                className="absolute right-8 top-8 z-50 w-48 bg-white dark:bg-surface-dark rounded-lg shadow-xl border border-border-light dark:border-border-dark overflow-hidden animate-in fade-in zoom-in-95 duration-100 origin-top-right text-left"
+                                                            >
+                                                                <div className="py-1">
+                                                                    {washing.status === 'Agendado' && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                updateWashingStatus(washing.id, 'Em Andamento');
+                                                                                setActiveMenuId(null);
+                                                                            }}
+                                                                            className="w-full text-left px-4 py-2.5 text-sm text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-blue-500 text-[18px]">play_arrow</span>
+                                                                            Iniciar Lavagem
+                                                                        </button>
+                                                                    )}
+                                                                    {washing.status === 'Em Andamento' && (
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                updateWashingStatus(washing.id, 'Concluído');
+                                                                                setActiveMenuId(null);
+                                                                            }}
+                                                                            className="w-full text-left px-4 py-2.5 text-sm text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                                                        >
+                                                                            <span className="material-symbols-outlined text-green-500 text-[18px]">check_circle</span>
+                                                                            Concluir Lavagem
+                                                                        </button>
+                                                                    )}
+
+                                                                    <div className="h-px bg-gray-100 dark:bg-gray-700 my-1"></div>
+
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            if (confirm("Tem certeza que deseja cancelar esta lavagem?")) {
+                                                                                deleteWashing(washing.id);
+                                                                                setActiveMenuId(null);
+                                                                            }
+                                                                        }}
+                                                                        className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                                                    >
+                                                                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                                                                        Cancelar
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))
